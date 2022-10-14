@@ -1,13 +1,14 @@
-
-
-
 const gameBoard = (() => {
+
     let board = Array.from(Array(9).keys())
+    const cellField = document.querySelectorAll('.cell')
 
+    const getField = (index) => board[index]
 
-    const getField = (index) => _board[index]
-
-    const setField = (player) => gameController.turnClick(player)
+    const setField = (index, player) => {
+        cellField[index].textContent = player.getAssign()
+        board[index] = player.getAssign()
+    }
 
     const clear = () => {
         for(let i = 0; i < board.length; i++){
@@ -15,6 +16,7 @@ const gameBoard = (() => {
         }
     }
 
+    console.log(board)
     const getBoard = () => board
 
     return {getField, setField, clear, getBoard}
@@ -38,8 +40,8 @@ let Player = (playerAssign) => {
 
 let gameController = (() => {
     const _playerFirst = Player('X')
-    const cellField = document.querySelectorAll('.cell')
-
+    const _aiPlayer = Player('O')
+    const board = gameBoard.getBoard()
     const  playerStep = (index) => {
         const field = gameBoard.getField(index)
     }
@@ -57,72 +59,104 @@ let gameController = (() => {
     const text = document.querySelector('.text')
     const getFirstPlayer = () => _playerFirst
 
+    const getAiPlayer = () => _aiPlayer
 
-    const turnClick = (player) => {
-        cellField.forEach(cell => {
-            cell.addEventListener('click', turn)
-
-            function turn(){
-                cell.textContent = player.getAssign()
-                let board = gameBoard.getBoard()
-                let num = cell.id
-                board[num] = player.getAssign()
-                let gameWon = gameController.checkWin(board, player.getAssign())
-                if (gameWon) gameController.gameOver(gameWon)
+    const turnClick = (index) => {
+        if (typeof board[index] == 'number'){
+            playerTurn(index)
+            if (!checkTie()) {
+                aiTurn(checkSpot())
+            } else{
+                declareWinner('draw')
             }
-        })
+        }
     }
 
 
+    const playerTurn = (index) => {
+        const cell = gameBoard.getField(index)
+        gameBoard.setField(cell, _playerFirst)
+        const gameWon = checkWin(board, _playerFirst.getAssign())
+        if (gameWon) gameOver()
+
+    }
+    const emptySquares = () => {
+        return board.filter((s) => typeof s == 'number')
+    }
+
+    const aiTurn = (index) => {
+        const cell = gameBoard.getField(index)
+        gameBoard.setField(cell, _aiPlayer)
+        const gameWon = checkWin(board, _aiPlayer.getAssign())
+        if (gameWon) gameOver()
+    }
+
+    const checkSpot = () => emptySquares()[0]
+
     const checkWin = (board, player) => {
-        let plays = board.reduce((a, e, i) => (e === player) ? a.concat(i) : a, [])
-        console.log(plays)
+        let places = board.reduce((a, e, i) => (e === player) ? a.concat(i) : a, [])
+        console.log(places)
         let gameWon = null
 
         for (let [index, win] of winCombats.entries()){
-            if (win.every(elem => plays.indexOf(elem) > -1)){
+            if (win.every(elem => places.indexOf(elem) > -1)){
                 gameWon = {index: index, player: player}
-                text.innerHTML = `The player ${gameWon.player} has won`
-
+                declareWinner(gameWon.player)
                 break
-
             }
         }
-        // text.innerHTML = `The player ${gameWon.player} won`
         return gameWon
     }
 
     const gameOver = (gameWon) => {
         display.style.display = 'block'
         gameBoard.clear()
+        return true
     }
 
-    const restart = function(){
+    const checkTie = () => {
+        if (emptySquares().length == 0) {
+
+            return true
+        }
+        return false
+    }
+    const declareWinner = (assign) => {
+        if (assign === 'draw'){
+            text.textContent = 'Draw game'
+            return true
+        }
+        text.textContent = assign + ' has won this game'
+    }
+    const restart = () => {
         displayController.clear()
         display.style.display = 'none'
 
     }
 
-
-    return {getFirstPlayer, restart, checkWin, gameOver, turnClick}
-
+    return {getFirstPlayer, restart, checkWin, gameOver, turnClick, checkTie, getAiPlayer, checkSpot,playerTurn}
 })()
 
 let displayController = (() => {
     const gameFields = document.querySelectorAll('.cell')
     const btnReset = document.querySelector('.btn_reset')
+    const board = gameBoard.getBoard()
 
     const clear = () => {
         for (let i = 0; i < gameFields.length; i++){
             gameFields[i].textContent = ''
-
         }
     }
     const init = (() => {
-        gameBoard.setField(gameController.getFirstPlayer())
-        // gameBoard.clear()
+
+        for (let i = 0; i < gameFields.length; i++){
+            gameFields[i].addEventListener('click', gameController.turnClick.bind(gameFields[i], i))
+            if(gameController.gameOver){
+                gameFields[i].removeEventListener('click', gameController.turnClick)
+            }
+
+        }
         btnReset.addEventListener('click', gameController.restart)
-        // gameController.checkWin(gameBoard.getBoard(),  gameController.getFirstPlayer())
     })();
 
     return {clear}
