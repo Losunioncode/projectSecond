@@ -15,7 +15,7 @@ const gameBoard = (() => {
             board[i] = i
         }
     }
-    console.log(board)
+
     const getBoard = () => board
 
     return {getField, setField, clear, getBoard}
@@ -113,7 +113,6 @@ let gameController = (() => {
 
     const minimax = (newBoard, player) => {
         const availableSpots = emptySquares()
-
         if (checkWin(newBoard, _playerFirst.getAssign())){
             return {score: -10};
         }else if(checkWin(newBoard, _aiPlayer.getAssign())){
@@ -194,7 +193,7 @@ let gameController = (() => {
         display.style.display = 'none'
     }
 
-    return {getFirstPlayer, restart, checkWin, gameOver, turnClick, checkTie, getAiPlayer, checkSpot, playerTurn, checkSpot}
+    return {getFirstPlayer, restart, checkWin, gameOver, turnClick, getAiPlayer, playerTurn}
 })()
 
 let displayController = (() => {
@@ -213,7 +212,6 @@ let displayController = (() => {
             gameFields[i].addEventListener('click', gameController.turnClick.bind(gameFields[i], i))
 
         }
-        console.log(gameController.checkSpot())
 
         btnReset.addEventListener('click', gameController.restart)
 
