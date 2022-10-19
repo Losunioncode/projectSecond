@@ -1,9 +1,9 @@
 const gameBoard = (() => {
-
     let board = Array.from(Array(9).keys())
-    const cellField = document.querySelectorAll('.cell')
 
+    const cellField = document.querySelectorAll('.cell')
     const getField = (index) => board[index]
+
 
     const setField = (index, player) => {
         cellField[index].textContent = player.getAssign()
@@ -15,7 +15,6 @@ const gameBoard = (() => {
             board[i] = i
         }
     }
-
     console.log(board)
     const getBoard = () => board
 
@@ -66,62 +65,123 @@ let gameController = (() => {
             playerTurn(index)
             if (!checkTie()) {
                 aiTurn(checkSpot())
-            } else{
+            }else{
                 declareWinner('draw')
             }
         }
     }
 
 
-    const playerTurn = (index) => {
-        const cell = gameBoard.getField(index)
-        gameBoard.setField(cell, _playerFirst)
-        const gameWon = checkWin(board, _playerFirst.getAssign())
-        if (gameWon) gameOver()
-
-    }
-    const emptySquares = () => {
-        return board.filter((s) => typeof s == 'number')
-    }
-
-    const aiTurn = (index) => {
-        const cell = gameBoard.getField(index)
-        gameBoard.setField(cell, _aiPlayer)
-        const gameWon = checkWin(board, _aiPlayer.getAssign())
-        if (gameWon) gameOver()
-    }
-
-    const checkSpot = () => emptySquares()[0]
-
     const checkWin = (board, player) => {
         let places = board.reduce((a, e, i) => (e === player) ? a.concat(i) : a, [])
-        console.log(places)
         let gameWon = null
 
         for (let [index, win] of winCombats.entries()){
             if (win.every(elem => places.indexOf(elem) > -1)){
                 gameWon = {index: index, player: player}
-                declareWinner(gameWon.player)
                 break
             }
         }
         return gameWon
     }
 
+    const checkSpot = () => {
+        return minimax(board, _aiPlayer).index
+    }
+
+    const playerTurn = (index) => {
+        const cell = gameBoard.getField(index)
+        gameBoard.setField(cell, _playerFirst)
+        const gameWon = checkWin(board, _playerFirst.getAssign())
+        if (gameWon) gameOver(gameWon)
+
+    }
+    const emptySquares = () => {
+        return board.filter((s) => typeof s == 'number')
+    }
+
+
+    const aiTurn = (index) => {
+        const cell = gameBoard.getField(index)
+        gameBoard.setField(cell, _aiPlayer)
+        const gameWon = checkWin(board, _aiPlayer.getAssign())
+        if (gameWon) {
+            gameOver(gameWon)
+        }
+    }
+
+
+    const minimax = (newBoard, player) => {
+        const availableSpots = emptySquares()
+
+        if (checkWin(newBoard, _playerFirst.getAssign())){
+            return {score: -10};
+        }else if(checkWin(newBoard, _aiPlayer.getAssign())){
+            return {score: 10};
+        } else if (availableSpots.length === 0){
+            return {score: 0}
+        }
+
+        const moves = []
+
+        for(let i = 0; i < availableSpots.length; i++){
+            const move = {};
+            move.index = newBoard[availableSpots[i]]
+            newBoard[availableSpots[i]] = player.getAssign()
+
+            if (player.getAssign() == _aiPlayer.getAssign()){
+                const result = minimax(newBoard, _playerFirst)
+                move.score = result.score
+            } else{
+                const result = minimax(newBoard, _aiPlayer)
+                move.score = result.score
+            }
+
+            newBoard[availableSpots[i]] = move.index
+            moves.push(move)
+        }
+
+        let bestMove
+
+        if(player === _aiPlayer){
+            let bestScore = -10000
+            for(let i = 0; i < moves.length; i++){
+                if (moves[i].score > bestScore){
+                    bestScore = moves[i].score
+                    bestMove = i
+                }
+            }
+        } else{
+            let bestScore = 10000;
+            for(let i = 0; i < moves.length; i++){
+                if (moves[i].score < bestScore){
+                    bestScore = moves[i].score
+                    bestMove = i
+                }
+            }
+        }
+        return moves[bestMove]
+
+    }
+
+
+
+
     const gameOver = (gameWon) => {
-        display.style.display = 'block'
-        gameBoard.clear()
+        declareWinner(gameWon.player)
         return true
     }
 
     const checkTie = () => {
         if (emptySquares().length == 0) {
-
             return true
         }
         return false
     }
+
+
     const declareWinner = (assign) => {
+        display.style.display = 'block'
         if (assign === 'draw'){
             text.textContent = 'Draw game'
             return true
@@ -130,11 +190,11 @@ let gameController = (() => {
     }
     const restart = () => {
         displayController.clear()
+        gameBoard.clear()
         display.style.display = 'none'
-
     }
 
-    return {getFirstPlayer, restart, checkWin, gameOver, turnClick, checkTie, getAiPlayer, checkSpot,playerTurn}
+    return {getFirstPlayer, restart, checkWin, gameOver, turnClick, checkTie, getAiPlayer, checkSpot, playerTurn, checkSpot}
 })()
 
 let displayController = (() => {
@@ -151,12 +211,12 @@ let displayController = (() => {
 
         for (let i = 0; i < gameFields.length; i++){
             gameFields[i].addEventListener('click', gameController.turnClick.bind(gameFields[i], i))
-            if(gameController.gameOver){
-                gameFields[i].removeEventListener('click', gameController.turnClick)
-            }
 
         }
+        console.log(gameController.checkSpot())
+
         btnReset.addEventListener('click', gameController.restart)
+
     })();
 
     return {clear}
